@@ -93,6 +93,7 @@
  */
 
 #import "Cell.h"
+#import <QuartzCore/QuartzCore.h>
 
 @implementation Cell
 
