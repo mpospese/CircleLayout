@@ -1,9 +1,9 @@
 
 /*
-     File: CircleLayout.m
- Abstract: 
+ File: CircleLayout.m
+ Abstract:
  
-  Version: 1.0
+ Version: 1.0
  
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
  Inc. ("Apple") in consideration of your agreement to the following
@@ -96,6 +96,14 @@
 
 #define ITEM_SIZE 70
 
+@interface CircleLayout()
+
+// arrays to keep track of insert, delete index paths
+@property (nonatomic, strong) NSMutableArray *deleteIndexPaths;
+@property (nonatomic, strong) NSMutableArray *insertIndexPaths;
+
+@end
+
 @implementation CircleLayout
 
 -(void)prepareLayout
@@ -128,24 +136,82 @@
     for (NSInteger i=0 ; i < self.cellCount; i++) {
         NSIndexPath* indexPath = [NSIndexPath indexPathForItem:i inSection:0];
         [attributes addObject:[self layoutAttributesForItemAtIndexPath:indexPath]];
-    }    
+    }
     return attributes;
 }
 
-- (UICollectionViewLayoutAttributes *)initialLayoutAttributesForInsertedItemAtIndexPath:(NSIndexPath *)itemIndexPath
+- (void)prepareForCollectionViewUpdates:(NSArray *)updateItems
 {
-    UICollectionViewLayoutAttributes* attributes = [self layoutAttributesForItemAtIndexPath:itemIndexPath];
-    attributes.alpha = 0.0;
-    attributes.center = CGPointMake(_center.x, _center.y);
+    // Keep track of insert and delete index paths
+    [super prepareForCollectionViewUpdates:updateItems];
+    
+    self.deleteIndexPaths = [NSMutableArray array];
+    self.insertIndexPaths = [NSMutableArray array];
+    
+    for (UICollectionViewUpdateItem *update in updateItems)
+    {
+        if (update.updateAction == UICollectionUpdateActionDelete)
+        {
+            [self.deleteIndexPaths addObject:update.indexPathBeforeUpdate];
+        }
+        else if (update.updateAction == UICollectionUpdateActionInsert)
+        {
+            [self.insertIndexPaths addObject:update.indexPathAfterUpdate];
+        }
+    }
+}
+
+- (void)finalizeCollectionViewUpdates
+{
+    [super finalizeCollectionViewUpdates];
+    // release the insert and delete index paths
+    self.deleteIndexPaths = nil;
+    self.insertIndexPaths = nil;
+}
+
+// Note: name of method changed
+// Also this gets called for all visible cells (not just the inserted ones) and
+// even gets called when deleting cells!
+- (UICollectionViewLayoutAttributes *)initialLayoutAttributesForAppearingItemAtIndexPath:(NSIndexPath *)itemIndexPath
+{
+    // Must call super
+    UICollectionViewLayoutAttributes *attributes = [super initialLayoutAttributesForAppearingItemAtIndexPath:itemIndexPath];
+    
+    if ([self.insertIndexPaths containsObject:itemIndexPath])
+    {
+        // only change attributes on inserted cells
+        if (!attributes)
+            attributes = [self layoutAttributesForItemAtIndexPath:itemIndexPath];
+        
+        // Configure attributes ...
+        attributes.alpha = 0.0;
+        attributes.center = CGPointMake(_center.x, _center.y);
+    }
+    
     return attributes;
 }
 
-- (UICollectionViewLayoutAttributes *)finalLayoutAttributesForDeletedItemAtIndexPath:(NSIndexPath *)itemIndexPath
+// Note: name of method changed
+// Also this gets called for all visible cells (not just the deleted ones) and
+// even gets called when inserting cells!
+- (UICollectionViewLayoutAttributes *)finalLayoutAttributesForDisappearingItemAtIndexPath:(NSIndexPath *)itemIndexPath
 {
-    UICollectionViewLayoutAttributes* attributes = [self layoutAttributesForItemAtIndexPath:itemIndexPath];
-    attributes.alpha = 0.0;
-    attributes.center = CGPointMake(_center.x, _center.y);
-    attributes.transform3D = CATransform3DMakeScale(0.1, 0.1, 1.0);
+    // So far, calling super hasn't been strictly necessary here, but leaving it in
+    // for good measure
+    UICollectionViewLayoutAttributes *attributes = [super finalLayoutAttributesForDisappearingItemAtIndexPath:itemIndexPath];
+    
+    if ([self.deleteIndexPaths containsObject:itemIndexPath])
+    {
+        // only change attributes on deleted cells
+       if (!attributes)
+            attributes = [self layoutAttributesForItemAtIndexPath:itemIndexPath];
+        
+        // Configure attributes ...
+        attributes.alpha = 0.0;
+        attributes.center = CGPointMake(_center.x, _center.y);
+        attributes.transform3D = CATransform3DMakeScale(0.1, 0.1, 1.0);
+    }
+    
     return attributes;
 }
 
