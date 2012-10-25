@@ -9,6 +9,9 @@ Shows how to use a collection view to arrange views on a circle and use custom a
 ===========================================================================
 CHANGES FROM PREVIOUS VERSIONS:
 
+Version 1.1
+- (Mark Pospesel) fixed the animations when inserting/removing items
+
 Version 1.0
 - First version.
 
